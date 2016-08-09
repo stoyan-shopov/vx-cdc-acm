@@ -88,8 +88,11 @@ THE SOFTWARE.
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/usb/usbstd.h>
-#include <libopencm3/usb/usbd.h>
 #include <libopencm3/usb/cdc.h>
+
+#include "definitions.h"
+#include "engine.h"
+#include "sf-arch.h"
 
 /* usb cdcacm device configuration */
 enum
@@ -99,10 +102,7 @@ enum
 	 *		does not enumerate properly; maybe investigate
 	 *		this */
 	USB_CONTROL_ENDPOINT_SIZE			= 32,
-	USB_CDCACM_DATA_IN_ENDPOINT_ADDRESS		= 0x81,
-	USB_CDCACM_DATA_OUT_ENDPOINT_ADDRESS		= 0x1,
 	USB_CDCACM_COMMUNICATION_IN_ENDPOINT_ADDRESS	= 0x82,
-	USB_CDCACM_PACKET_SIZE				= 64,
 	USB_CDCACM_POLLING_INTERVAL_MS			= 1,
 	USB_CDCACM_CONTROL_INTERFACE_NUMBER		= 0,
 	USB_CDCACM_DATA_INTERFACE_NUMBER		= 1,
@@ -299,9 +299,9 @@ static void usbd_cdcacm_set_config_callback(usbd_device * usbd_dev, uint16_t wVa
 	is_usb_device_configured = true;
 }
 
+usbd_device * usbd_dev;
 int main(void)
 {
-	usbd_device * usbd_dev;
 	rcc_periph_clock_enable(RCC_GPIOA);
 	rcc_clock_setup_in_hse_8mhz_out_72mhz();
 	usbd_dev = usbd_init(& st_usbfs_v1_usb_driver, & usb_device_descriptor, & usb_config_descriptor,
@@ -309,16 +309,12 @@ int main(void)
 			usb_control_buffer, sizeof usb_control_buffer);
 	usbd_register_set_config_callback(usbd_dev, usbd_cdcacm_set_config_callback);
 	/* simple loopback test loop */
+	while (!is_usb_device_configured)
+		usbd_poll(usbd_dev);
 	while (1)
 	{
-		int i = 0;
-		char buf[64];
-		if (is_usb_device_configured && (i = usbd_ep_read_packet(usbd_dev, USB_CDCACM_DATA_OUT_ENDPOINT_ADDRESS, buf, sizeof buf)))
-		{
-			while (!usbd_ep_write_packet(usbd_dev, USB_CDCACM_DATA_IN_ENDPOINT_ADDRESS, buf, i));
-			while (!usbd_ep_write_packet(usbd_dev, USB_CDCACM_DATA_IN_ENDPOINT_ADDRESS, ">>>", 3));
-		}
-		usbd_poll(usbd_dev);
+		sfputc(sfgetc() - 1);
+		sfsync();
 	}
 }
 
