@@ -14,6 +14,12 @@ CFLAGS += -DENGINE_32BIT -DENABLE_HDUMP=0 \
 	 -DSTACK_DEPTH="$(STACK_DEPTH)" \
 	 -DCORE_CELLS_COUNT="$(CORE_CELLS_COUNT)"
 
+SFORTH_OBJECTS = sforth/engine.o sforth/sf-arch-default.o  \
+		sforth/sf-opt-file.o \
+		sforth/sf-opt-prog-tools.o \
+		sforth/sf-opt-string.o
+
 OBJS += vx-sf-arch.o
+OBJS += $(SFORTH_OBJECTS)
 
 include ../libopencm3.target.mk

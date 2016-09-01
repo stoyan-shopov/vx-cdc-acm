@@ -311,10 +311,8 @@ int main(void)
 	/* simple loopback test loop */
 	while (!is_usb_device_configured)
 		usbd_poll(usbd_dev);
+	sf_reset();
 	while (1)
-	{
-		sfputc(sfgetc() - 1);
-		sfsync();
-	}
+		do_quit();
 }
 
