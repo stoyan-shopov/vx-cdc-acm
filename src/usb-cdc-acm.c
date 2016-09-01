@@ -87,6 +87,7 @@ THE SOFTWARE.
  */
 
 #include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/flash.h>
 #include <libopencm3/usb/usbstd.h>
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/usb/cdc.h>
@@ -299,12 +300,37 @@ static void usbd_cdcacm_set_config_callback(usbd_device * usbd_dev, uint16_t wVa
 	is_usb_device_configured = true;
 }
 
+static void rcc_clock_setup_in_hse_8mhz_out_48mhz(void)
+{
+	rcc_osc_on(RCC_HSE);
+	rcc_wait_for_osc_ready(RCC_HSE);
+	rcc_set_sysclk_source(RCC_HSE);
+
+	rcc_set_hpre(RCC_CFGR_HPRE_NODIV);
+	rcc_set_ppre(RCC_CFGR_PPRE_NODIV);
+
+	flash_set_ws(FLASH_ACR_LATENCY_024_048MHZ);
+
+	/* 8MHz * 12 / 2 = 48MHz */
+	rcc_set_pll_multiplication_factor(RCC_CFGR_PLLMUL_MUL12);
+
+	RCC_CFGR &= ~RCC_CFGR_PLLSRC;
+
+	rcc_osc_on(RCC_PLL);
+	rcc_wait_for_osc_ready(RCC_PLL);
+	rcc_set_sysclk_source(RCC_PLL);
+
+	rcc_apb1_frequency = 48000000;
+	rcc_ahb_frequency = 48000000;
+}
+
 int main(void)
 {
 	usbd_device * usbd_dev;
 	rcc_periph_clock_enable(RCC_GPIOA);
-	rcc_clock_setup_in_hse_8mhz_out_72mhz();
-	usbd_dev = usbd_init(& st_usbfs_v1_usb_driver, & usb_device_descriptor, & usb_config_descriptor,
+	rcc_set_usbclk_source(RCC_PLL);
+	rcc_clock_setup_in_hse_8mhz_out_48mhz();
+	usbd_dev = usbd_init(& st_usbfs_v2_usb_driver, & usb_device_descriptor, & usb_config_descriptor,
 			usb_strings, sizeof usb_strings / sizeof * usb_strings,
 			usb_control_buffer, sizeof usb_control_buffer);
 	usbd_register_set_config_callback(usbd_dev, usbd_cdcacm_set_config_callback);
