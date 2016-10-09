@@ -87,6 +87,7 @@ THE SOFTWARE.
  */
 
 #include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/flash.h>
 #include <libopencm3/usb/usbstd.h>
 #include <libopencm3/usb/usbd.h>
@@ -324,12 +325,23 @@ static void rcc_clock_setup_in_hse_8mhz_out_48mhz(void)
 	rcc_ahb_frequency = 48000000;
 }
 
+enum
+{
+	USB_CONNECT_PORT	= GPIOA,
+	USB_CONNECT_PIN		= GPIO8,
+};
+
 int main(void)
 {
 	usbd_device * usbd_dev;
 	rcc_periph_clock_enable(RCC_GPIOA);
+
+	gpio_mode_setup(USB_CONNECT_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, USB_CONNECT_PIN);
+	gpio_set_output_options(USB_CONNECT_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_HIGH, USB_CONNECT_PIN);
+
 	rcc_set_usbclk_source(RCC_PLL);
 	rcc_clock_setup_in_hse_8mhz_out_48mhz();
+	gpio_set(USB_CONNECT_PORT, USB_CONNECT_PIN);
 	usbd_dev = usbd_init(& st_usbfs_v2_usb_driver, & usb_device_descriptor, & usb_config_descriptor,
 			usb_strings, sizeof usb_strings / sizeof * usb_strings,
 			usb_control_buffer, sizeof usb_control_buffer);
