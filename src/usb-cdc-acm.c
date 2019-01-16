@@ -272,10 +272,12 @@ static const char * usb_strings[] =
 static uint8_t usb_control_buffer[128];
 
 
-static int usbd_cdcacm_control_callback(usbd_device *usbd_dev,
+static enum usbd_request_return_codes usbd_cdcacm_control_callback(usbd_device *usbd_dev,
 		struct usb_setup_data *req, uint8_t **buf, uint16_t *len,
 		usbd_control_complete_callback *complete)
 {
+	/* suppress compiler warnings */
+	(void) usbd_dev, (void) req, (void) buf, (void) len, (void) complete;
 #if 0
 	if (req->bmRequestType != (USB_REQ_TYPE_IN | USB_REQ_TYPE_INTERFACE)
 			|| req->bRequest != USB_REQ_GET_DESCRIPTOR
@@ -288,9 +290,12 @@ static int usbd_cdcacm_control_callback(usbd_device *usbd_dev,
 #endif
 	return USBD_REQ_HANDLED;
 }
-volatile static bool is_usb_device_configured;
+static volatile bool is_usb_device_configured;
 static void usbd_cdcacm_set_config_callback(usbd_device * usbd_dev, uint16_t wValue)
 {
+	/* suppress compiler warnings */
+	(void) wValue;
+
 	usbd_ep_setup(usbd_dev, USB_CDCACM_COMMUNICATION_IN_ENDPOINT_ADDRESS, USB_ENDPOINT_ATTR_INTERRUPT, USB_CDCACM_PACKET_SIZE, 0);
 	usbd_ep_setup(usbd_dev, USB_CDCACM_DATA_IN_ENDPOINT_ADDRESS, USB_ENDPOINT_ATTR_BULK, USB_CDCACM_PACKET_SIZE, 0);
 	usbd_ep_setup(usbd_dev, USB_CDCACM_DATA_OUT_ENDPOINT_ADDRESS, USB_ENDPOINT_ATTR_BULK, USB_CDCACM_PACKET_SIZE, 0);
